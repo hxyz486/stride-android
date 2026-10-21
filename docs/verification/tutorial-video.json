@@ -1,0 +1,14 @@
+{
+  "durationSeconds": 52.800000000000004,
+  "frames": 792,
+  "size": [
+    720,
+    1280
+  ],
+  "voice": "Microsoft Huihui Desktop",
+  "subtitles": "burned in and SRT",
+  "file": "stride-tutorial-1.3.4.mp4",
+  "location": "illustrative fixture; not a recording of phone permission dialogs",
+  "verifiedFullDecode": true,
+  "verifiedNarrationNonempty": true
+}

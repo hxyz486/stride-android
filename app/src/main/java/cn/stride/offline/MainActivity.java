@@ -47,7 +47,7 @@ public final class MainActivity extends Activity {
         settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setDefaultTextEncodingName("UTF-8");settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString()+" Stride/1.3.3 (cn.stride.offline)");
+        settings.setUserAgentString(settings.getUserAgentString()+" Stride/1.3.4 (cn.stride.offline)");
         web.addJavascriptInterface(new Bridge(),"Native");
         web.setWebViewClient(new WebViewClient(){
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){

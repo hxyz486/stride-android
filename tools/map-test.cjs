@@ -76,6 +76,13 @@ const server=http.createServer((req,res)=>{let name;try{name=decodeURIComponent(
    const tiles=await page.evaluate(()=>({dpr,keys:[...mapTiles.cache.keys()],size:256*2**(zoom-Math.ceil(zoom+Math.log2(Math.min(2,dpr))))}));
    assert.equal(tiles.dpr,2);assert(tiles.keys.some(key=>key.startsWith('online-amap/17/')));assert(tiles.size<128,'low-resolution tile is being enlarged');
   });
+  await check('physical pixel tile edges and 3x screen sampling stay sharp',async()=>{
+   await page.evaluate(()=>{zoom=16;dpr=2;resize();window.__tileRects=[];window.__originalDrawImage=ctx.drawImage;ctx.drawImage=function(img,x,y,w,h){__tileRects.push([x,y,w,h]);return __originalDrawImage.call(this,img,x,y,w,h);};dirty=true;});await loaded();
+   const exact=await page.evaluate(()=>__tileRects);assert(exact.length>0);assert(exact.every(rect=>rect.every(v=>Math.abs(v*2-Math.round(v*2))<1e-8)),'tile edges must align to physical pixels');assert(exact.every(rect=>rect[2]*2===256&&rect[3]*2===256),'2x screen must render 256px source without the extra half-pixel stretch');
+   await page.evaluate(()=>{dpr=3;resize();dirty=true;});await loaded();
+   assert(await page.evaluate(()=>[...mapTiles.cache.keys()].some(key=>key.startsWith('online-amap/18/'))),'3x screen did not load finer tiles');assert(await page.evaluate(()=>mapTiles.cache.size<=96));
+   await page.evaluate(()=>{ctx.drawImage=__originalDrawImage;delete window.__originalDrawImage;delete window.__tileRects;dpr=2;resize();dirty=true;});await loaded();
+  });
   await check('Amap tiles, route projection, and touch inverse share GCJ02 at zoom 19',async()=>{
    // Independent landmark fixtures keep a missing or double-applied conversion from
    // passing merely because screen() and locationAt() undo the same mistake.

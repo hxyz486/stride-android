@@ -35,9 +35,9 @@ class MapTiles {
   draw(ctx,view,source) {
     if(this.sourceId!==source.id){this.clear();this.sourceId=source.id;}
     const {center,zoom,width,height}=view;
-    // Sample at the device resolution (up to 2x), never enlarge a lower-level
+    // Sample at the device resolution (up to 3x), never enlarge a lower-level
     // raster during fractional zoom. Imported maps retain their native levels.
-    const density=source.online?Math.min(2,Math.max(1,view.dpr||1)):1;
+    const density=source.online?Math.min(3,Math.max(1,view.dpr||1)):1;
     let z=Math.max(0,Math.min(19,source.online?Math.ceil(zoom+Math.log2(density)):Math.floor(zoom)));
     // Tall/full-screen viewports must still fit the bounded in-memory cache.
     const tileCount=level=>{
@@ -73,7 +73,13 @@ class MapTiles {
       }
       if(entry.status==='ready'){
         ctx.save();
-        ctx.drawImage(entry.img,(spec.x-c[0]*n)*size+width/2,(spec.y-c[1]*n)*size+height/2,size+.5,size+.5);
+        // Align shared tile edges to physical pixels instead of stretching each
+        // image by half a CSS pixel. Exact 2x sampling stays pixel-for-pixel.
+        const ratio=view.dpr||1,left=(spec.x-c[0]*n)*size+width/2,top=(spec.y-c[1]*n)*size+height/2;
+        const x0=Math.round(left*ratio)/ratio,y0=Math.round(top*ratio)/ratio;
+        const x1=Math.round((left+size)*ratio)/ratio,y1=Math.round((top+size)*ratio)/ratio;
+        ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+        ctx.drawImage(entry.img,x0,y0,x1-x0,y1-y0);
         ctx.restore();
       }
     }
