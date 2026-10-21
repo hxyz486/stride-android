@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-21",
+  "serial": "emulator-5582",
+  "tests": [],
+  "transport": "127.0.0.1:5583",
+  "android": "15",
+  "passed": false,
+  "error": "Error: spawnSync E:/codex/anti-fraud-workstation/.toolchain/android-sdk/platform-tools/adb.exe ETIMEDOUT\n    at Object.spawnSync (node:internal/child_process:1143:20)\n    at spawnSync (node:child_process:911:24)\n    at execFileSync (node:child_process:954:15)\n    at adb (E:\\codex\\stride-android\\tools\\android-location-check.cjs:9:22)\n    at main (E:\\codex\\stride-android\\tools\\android-location-check.cjs:42:2)\n    at Object.<anonymous> (E:\\codex\\stride-android\\tools\\android-location-check.cjs:112:1)\n    at Module._compile (node:internal/modules/cjs/loader:1830:14)\n    at Object..js (node:internal/modules/cjs/loader:1961:10)\n    at Module.load (node:internal/modules/cjs/loader:1553:32)\n    at Module._load (node:internal/modules/cjs/loader:1355:12)"
+}

@@ -1,0 +1,9 @@
+.toolchain/
+build/
+local.properties
+*.jks
+*.keystore
+.gradle/
+dist/
+__pycache__/
+*.idsig

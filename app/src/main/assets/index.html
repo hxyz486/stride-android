@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f4f0"><title>行迹 STRIDE</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://webrd01.is.autonavi.com; connect-src 'self'; object-src 'none'; base-uri 'none'">
+  <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="layout.css"><script src="map-coordinates.js" defer></script><script src="map-tiles.js" defer></script><script src="app.js" defer></script>
+</head>
+<body class="route-home trimmed-home">
+<div class="app">
+  <header class="header"><div class="brand"><span class="brand-icon">S<span>↗</span></span><div><strong>STRIDE<span class="brand-cn">行迹</span></strong><small>MAKE YOUR OWN WAY.</small></div></div><button class="icon-button" id="help" aria-label="使用说明" data-icon="info"></button></header>
+  <main>
+    <section class="page active" id="page-route">
+      <div class="page-heading"><div><p class="eyebrow">YOUR ROUTE, YOUR RHYTHM</p><h1>每一步，由你定义<span class="period">.</span></h1></div><span class="small-index">01 / 路线</span></div>
+      <div class="map-panel">
+        <canvas id="map" aria-label="路线地图，可直接选择拖动、手绘和选点，双指移动缩放"></canvas>
+        <div class="editor-top"><div class="editor-summary"><div><small>起</small><strong>＋ <span id="pointCount">0</span></strong><small>个点</small></div><div><strong id="editorDistance">0.00 km</strong><button id="roundTrip">单程 ⇄</button></div></div><div class="editor-segments"><button id="setStart">设起点</button><button id="addPoints" class="selected">画路线</button><button id="freehand">手绘</button></div></div>
+        <div class="editor-bottom"><span id="editorHint">点击地图，添加编号途经点</span><div><button id="editorUndo">撤销</button><button id="editorClear">清空</button><button id="editorDone">完成</button></div></div>
+        <div class="map-top"><button class="offline-chip" id="mapStatus" aria-label="切换在线或离线地图" aria-haspopup="dialog"><i></i><span id="mapStatusText">在线地图 ↗</span></button><button class="location-chip" id="chooseCity"><span data-icon="pin"></span><span id="cityLabel">正在定位</span><span data-icon="chevron"></span></button><button id="locateMe" class="locate-button" aria-label="定位当前位置" data-icon="focus"></button></div>
+        <div class="home-modes" role="group" aria-label="路线操作模式"><button id="homeMove" class="selected" aria-pressed="true"><span data-icon="hand"></span>拖动</button><button id="homeFreehand" aria-pressed="false"><span data-icon="pen"></span>手绘</button><button id="homeWaypoints" aria-pressed="false"><span data-icon="pin"></span>选点</button></div>
+        <span id="locationStatus" class="location-status" role="status" aria-live="polite">正在定位…</span>
+        <div class="map-mode"><button id="modeDraw" class="selected" aria-label="绘制轨迹" data-icon="pen"></button><button id="modeMove" aria-label="移动地图" data-icon="hand"></button></div>
+        <div class="map-zoom"><button id="zoomIn" aria-label="放大地图" data-icon="plus"></button><span></span><button id="zoomOut" aria-label="缩小地图" data-icon="minus"></button></div>
+        <button id="fitRoute" class="map-fit" aria-label="显示整条路线" data-icon="focus"></button>
+        <div class="map-bottom"><span id="mapScale">1000 km</span><span class="map-credits"><a id="mapAttribution" href="https://www.amap.com/" rel="noopener">© 高德地图</a></span></div>
+        <div id="mapNotice" class="map-notice" role="status" aria-live="polite" hidden><span id="mapNoticeText">街道地图暂时无法加载，请检查网络后重试。</span><div><button id="retryMap">重试加载</button><button id="useOverview">离线概览</button></div></div>
+        <div id="mapHint" class="map-hint"><span data-icon="pen"></span><span>放大地图，用手指画出你的路线</span></div>
+        <div class="home-speed"><label class="speed-readout" for="speed"><strong id="speedValue">3</strong><span>km/min</span></label><input id="speed" type="range" min="0" max="5" value="3" step="0.1" aria-label="速度，0 至 5 公里每分钟"><span class="sr-only" id="paceValue">20 秒/公里</span></div>
+      </div>
+      <div class="home-secondary">
+      <div class="map-tools"><button id="openEditor">全屏绘制 ↗</button><div><button id="undo" aria-label="撤销" data-icon="undo"></button><button id="clear" aria-label="清空路线" data-icon="trash"></button><button id="demo">试试示例 <span>↗</span></button></div></div><span id="routeCaption" class="sr-only">绘制模式 · 双指移动和缩放</span>
+      <div class="route-stats"><div><span>路线距离 <small>KM</small></span><strong id="routeDistance">0.00</strong></div><div><span>预计用时 <small>MIN:SEC</small></span><strong id="estimatedTime">00:00</strong></div><div class="route-stat-last"><span>预计步数 <small>STEPS</small></span><strong id="estimatedSteps">0</strong></div></div>
+      <button class="motion-shortcut" id="openMotion" aria-label="查看运动数据与传感器"><span class="motion-symbol" data-icon="wave"></span><span><strong>模拟步态晃动</strong><small>三轴陀螺仪曲线 · App 内模拟</small></span><span id="gyroBadge" class="mini-badge">已开启</span><span data-icon="chevron"></span></button>
+      <div class="run-mode"><button id="mockMode" class="selected"><i></i>系统模拟定位</button><button id="previewMode"><i></i>App 内预览</button></div>
+      </div>
+    </section>
+    <section class="page" id="page-motion">
+      <div class="page-heading"><div><p class="eyebrow">FEEL EVERY STEP</p><h1>看见运动的节律.</h1></div><span class="small-index">02 / 运动</span></div>
+      <div class="sensor-source" role="group" aria-label="角速度数据来源"><button id="sensorSimulation" class="selected" aria-pressed="true">App 内模拟</button><button id="sensorDevice" aria-pressed="false">手机实测</button></div>
+      <div class="sensor-diagnostics" id="sensorDiagnostics" hidden><strong>真实传感器 · 仅前台读取</strong><p id="sensorDescription">正在检查设备传感器…</p><div class="measured-stats"><span>实测步数<b id="measuredSteps">—</b></span><span>实测步频 / spm<b id="measuredCadence">—</b></span></div><p>步频来自系统步伐检测器，陀螺仪显示角速度。此功能不会向其他应用写入传感器或步频数据。</p><button class="text-button" id="sensorSettings">查看应用权限 ↗</button></div>
+      <div class="dark-card"><div class="chart-heading"><span>GYROSCOPE</span><span class="live"><i></i><span id="sensorStatus">待开始</span></span></div><div class="chart-title">三轴角速度<span>rad/s</span></div><canvas id="gyroChart" height="175"></canvas><div class="axis-values"><span><i></i>X <b id="gx">0.000</b></span><span><i></i>Y <b id="gy">0.000</b></span><span><i></i>Z <b id="gz">0.000</b></span></div></div>
+      <div class="white-card toggle-row"><div><strong>步态晃动模拟</strong><p>按当前配速生成周期性三轴角速度</p></div><button id="gyroToggle" class="switch on" role="switch" aria-checked="true" aria-label="步态晃动模拟"></button></div>
+      <div class="white-card toggle-row"><div><strong>退出后显示悬浮窗</strong><p>返回桌面后，可开始、暂停和继续回放</p></div><button id="overlayToggle" class="switch" role="switch" aria-checked="false" aria-label="退出后显示悬浮窗"></button></div>
+      <p class="note">开启时需在系统设置允许“显示在其他应用上层”。强制停止应用后，悬浮窗也会关闭。</p>
+      <div class="section-title"><h2>实时回放</h2><span>LIVE SESSION</span></div>
+      <div class="live-stats"><div><small>已行进 / km</small><strong id="liveDistance">0.00</strong></div><div><small>运动时间</small><strong id="liveTime">00:00</strong></div><div><small>模拟步数</small><strong id="liveSteps">0</strong></div><div><small>模拟步频 / spm</small><strong id="cadence">181</strong></div></div>
+      <div class="coordinate-card"><span data-icon="pin"></span><div><small>当前模拟坐标 · WGS84</small><p id="coords">等待开始回放</p></div></div>
+      <p class="note"><span data-icon="info"></span>这里的角速度由步态模型生成，仅供 App 内预览与数据导出。Android 普通应用没有改写系统陀螺仪的权限。</p>
+      <button class="outline-button" id="exportSession"><span data-icon="download"></span>导出轨迹与模拟运动数据</button>
+    </section>
+    <section class="page" id="page-maps">
+      <div class="page-heading"><div><p class="eyebrow">YOUR MAP, YOUR WAY</p><h1>从全国，走进街巷.</h1></div><span class="small-index">03 / 地图</span></div>
+      <div class="map-library-card online-map-card"><div class="library-icon" data-icon="map"></div><div class="library-head"><span class="mini-badge">在线地图 · 默认</span><h2>高德在线地图</h2><p>全国道路、建筑与中文地名</p></div><p class="library-note">选择城市后放大即可画路线，首次查看需要联网。地图按当前视野加载，街道细节随地区有所不同。</p><button class="outline-button" id="showOnline">打开高德在线地图 <span>↗</span></button></div>
+      <details class="backup-maps"><summary>备用离线地图</summary><div class="map-library-card"><div class="library-icon" data-icon="map"></div><div class="library-head"><span class="mini-badge">内置离线概览</span><h2>中国 · 全国概览</h2><p>省级边界与城市定位 · 无需联网</p></div><button class="outline-button" id="showChina">查看离线全国概览 <span>↗</span></button></div>
+      <div class="white-card library-detail"><div><span class="mini-badge">区域详细地图</span><h2 id="importedName">添加你的城市</h2><p id="importedDescription">导入栅格 MBTiles，离线查看街道与步道。</p></div><button class="black-button" id="importMap"><span data-icon="plus"></span>导入离线地图</button><button class="text-button" id="showImported" hidden>在地图上查看 ↗</button></div></details>
+      <div class="section-title"><h2>地图使用小贴士</h2><span>GOOD TO KNOW</span></div>
+      <div class="tips"><div><b>01</b><p><strong>在线查看全国街道</strong><span>默认按当前视野加载街道地图，需要网络。不提供在线地图的全国下载功能。</span></p></div><div><b>02</b><p><strong>离线详细地图按区域导入</strong><span>支持 Web Mercator 栅格 MBTiles（PNG / JPEG / WebP，最大 2GB）。导入有权使用的地图包后，可断网查看包内区域。</span></p></div><div><b>03</b><p><strong>切换地图，保留路线</strong><span>点地图左上角切换在线或离线。内置概览不含街道细节；路线绘制与回放可离线使用。</span></p></div></div>
+    </section>
+  </main>
+  <footer class="playback"><div class="playback-status"><span><i id="statusDot"></i><span id="runStatus">准备好，出发吧</span></span><span id="progressLabel">ROUTE SIMULATOR</span></div><div class="progress-track"><div id="progressBar"></div></div><div class="playback-buttons"><button id="start" class="black-button"><span data-icon="play"></span><span id="startLabel">开始模拟</span><span class="button-arrow">↗</span></button><button id="stop" class="stop-button" aria-label="结束模拟" hidden data-icon="stop"></button></div></footer>
+  <nav class="bottom-nav" aria-label="页面切换"><button class="active" data-page="route"><span data-icon="route"></span><span>路线规划</span></button><button data-page="motion"><span data-icon="activity"></span><span>运动数据</span></button><button data-page="maps"><span data-icon="layers"></span><span>地图</span></button></nav>
+</div>
+<div id="sheetBackdrop" class="sheet-backdrop" hidden></div>
+<dialog id="routeToolsSheet" class="sheet route-tools"><div class="sheet-handle"></div><div class="sheet-heading"><h2>路线工具</h2><button class="icon-button close-sheet" aria-label="关闭" data-icon="close"></button></div><div id="routeToolsContent"></div><button class="outline-button" id="openMapLibrary">地图管理 <span>↗</span></button><button class="outline-button" id="menuRetryMap">重试加载在线地图 <span>↻</span></button></dialog>
+<dialog id="mapSourceSheet" class="sheet"><div class="sheet-handle"></div><div class="sheet-heading"><h2>选择地图来源</h2><button class="icon-button close-sheet" aria-label="关闭" data-icon="close"></button></div><p>切换来源会保留已绘制的路线。</p><div class="map-sources" role="group" aria-label="地图来源"><button id="sourceOnline" class="map-source-option selected" aria-pressed="true"><strong>高德在线地图</strong><small>全国道路、建筑与中文地名 · 需要联网</small></button><button id="sourceOverview" class="map-source-option" aria-pressed="false"><strong>全国离线概览</strong><small>内置省级边界与城市定位 · 无街道细节</small></button><button id="sourceImported" class="map-source-option" aria-pressed="false" disabled><strong>已导入的离线地图</strong><small>先在「地图」页导入 MBTiles 地图包</small></button></div><p class="map-source-note">高德底图按当前视野联网加载，切换来源不会改变已保存的 GPS 路线。</p></dialog>
+<dialog id="citySheet" class="sheet"><div class="sheet-handle"></div><div class="sheet-heading"><h2>去哪里走走？</h2><button class="icon-button close-sheet" aria-label="关闭" data-icon="close"></button></div><p>城市快捷定位 · 坐标为 GPS WGS84</p><input id="citySearch" type="search" placeholder="搜索城市，或输入 纬度,经度" aria-label="搜索城市或输入 WGS84 坐标"><div id="cityResults"></div></dialog>
+<dialog id="helpSheet" class="sheet"><div class="sheet-handle"></div><div class="sheet-heading"><h2>让轨迹动起来</h2><button class="icon-button close-sheet" aria-label="关闭" data-icon="close"></button></div><div class="help-content"><p><b>1. 绘制路线</b>打开后默认在线地图，允许定位即可查看当前位置。左上角切换在线或离线、定位及拖动／手绘／选点，双指可移动和缩放。长按地图可使用撤销和清空等辅助工具。</p><p><b>2. 调整配速</b>滑动调节 0–5 公里/分钟，默认 3 公里/分钟。速度为 0 时原地停留；回放过程中也可以调速。</p><p><b>3. 配置系统模拟定位</b>打开手机设置 → 关于手机，连续点击版本号启用开发者选项。在开发者选项 → 选择模拟位置信息应用中，选择“行迹 STRIDE”。同时开启手机位置信息，并授予精确位置权限。</p><p><b>4. 开始回放</b>按所画路线更新模拟位置。可暂停、继续或结束，结束会撤销本应用的模拟定位提供者。</p><p><b>关于传感器</b>读取陀螺仪与修改陀螺仪是两回事。普通 Android 应用只能读取真实传感器；本应用生成的步态角速度供内部预览和导出，不会修改其他应用读到的陀螺仪。系统定位带有官方模拟标记，其他应用可能忽略该位置。</p><p><b>后台运行</b>允许通知可在通知栏暂停或结束。部分手机需要在电池设置中允许本应用后台运行。被系统强制结束后不会自动恢复回放。</p></div><button id="openSettings" class="black-button">打开开发者选项 <span>↗</span></button><button id="enableNotifications" class="outline-button">允许回放通知</button></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+</body></html>

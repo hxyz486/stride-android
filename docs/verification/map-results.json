@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-21",
+  "syntheticNativeBridge": true,
+  "results": [
+    {
+      "name": "online is the default and visible tiles decode successfully",
+      "status": "pass",
+      "milliseconds": 268
+    },
+    {
+      "name": "original map controls remain visible while lower data panels are trimmed",
+      "status": "pass",
+      "milliseconds": 1484
+    },
+    {
+      "name": "Amap tiles, route projection, and touch inverse share GCJ02 at zoom 19",
+      "status": "pass",
+      "milliseconds": 28
+    },
+    {
+      "name": "online pan and pinch retain the geographic anchor and never edit route",
+      "status": "pass",
+      "milliseconds": 1547
+    },
+    {
+      "name": "source buttons preserve exact WGS84 route; overview and import issue no remote requests",
+      "status": "pass",
+      "milliseconds": 1208
+    },
+    {
+      "name": "switching sources cancels pan/pinch and rolls back an unfinished freehand stroke",
+      "status": "pass",
+      "milliseconds": 228
+    },
+    {
+      "name": "malformed imported metadata keeps a valid WGS84 center and can return online",
+      "status": "pass",
+      "milliseconds": 101
+    },
+    {
+      "name": "partial network failure stays visible and retry recovers all viewport tiles",
+      "status": "pass",
+      "milliseconds": 759
+    },
+    {
+      "name": "unresponsive image requests time out and can be retried",
+      "status": "pass",
+      "milliseconds": 862
+    },
+    {
+      "name": "rapid panning and zooming keep downloads and tile cache bounded",
+      "status": "pass",
+      "milliseconds": 2002
+    },
+    {
+      "name": "cold launch returns to online map without changing saved WGS84 route or center",
+      "status": "pass",
+      "milliseconds": 213
+    },
+    {
+      "name": "source menu offers offline overview after a tile failure",
+      "status": "pass",
+      "milliseconds": 387
+    },
+    {
+      "name": "cold launch automatically locates through native bridge and preserves saved WGS84 route",
+      "status": "pass",
+      "milliseconds": 120
+    },
+    {
+      "name": "location denial preserves the map and manual retry recenters without changing route",
+      "status": "pass",
+      "milliseconds": 71
+    },
+    {
+      "name": "invalid or simulated location is rejected and a late fix respects manual map selection",
+      "status": "pass",
+      "milliseconds": 29
+    },
+    {
+      "name": "map tools, speed and start remain on the first screen without lower data panels",
+      "status": "pass",
+      "milliseconds": 307
+    }
+  ],
+  "tileRequestsIntercepted": 536,
+  "importedTileFixtures": 16,
+  "uncaughtErrors": []
+}

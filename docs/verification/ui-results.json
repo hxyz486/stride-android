@@ -1,0 +1,106 @@
+{
+  "date": "2026-10-21",
+  "results": [
+    {
+      "name": "original map controls with trimmed lower panels, default speed and empty-route validation",
+      "status": "pass",
+      "milliseconds": 191
+    },
+    {
+      "name": "help open, close, backdrop, native-back handler",
+      "status": "pass",
+      "milliseconds": 154
+    },
+    {
+      "name": "city search, no match, invalid coordinates, valid coordinates",
+      "status": "pass",
+      "milliseconds": 62
+    },
+    {
+      "name": "zoom plus/minus, fit empty, demo, visible map controls",
+      "status": "pass",
+      "milliseconds": 775
+    },
+    {
+      "name": "full screen start point and numbered waypoints",
+      "status": "pass",
+      "milliseconds": 895
+    },
+    {
+      "name": "round trip and clear undo restore route metadata",
+      "status": "pass",
+      "milliseconds": 159
+    },
+    {
+      "name": "freehand stroke and undo restores numbered mode",
+      "status": "pass",
+      "milliseconds": 150
+    },
+    {
+      "name": "cancelled touch stroke rolls back points and undo record",
+      "status": "pass",
+      "milliseconds": 40
+    },
+    {
+      "name": "two finger pinch does not mutate route or undo history",
+      "status": "pass",
+      "milliseconds": 34
+    },
+    {
+      "name": "move mode pans without editing route",
+      "status": "pass",
+      "milliseconds": 88
+    },
+    {
+      "name": "landscape editor fit remains finite and done control works",
+      "status": "pass",
+      "milliseconds": 200
+    },
+    {
+      "name": "0–5 km/min keyboard endpoints, stationary zero, live resume and pause/stop",
+      "status": "pass",
+      "milliseconds": 3290
+    },
+    {
+      "name": "running route is immutable",
+      "status": "pass",
+      "milliseconds": 2144
+    },
+    {
+      "name": "motion source, gyro toggle and browser-only permission explanations",
+      "status": "pass",
+      "milliseconds": 913
+    },
+    {
+      "name": "JSON export keeps WGS84, km/min speed and app-local sensor labels",
+      "status": "pass",
+      "milliseconds": 232
+    },
+    {
+      "name": "map library, import explanation and country selection",
+      "status": "pass",
+      "milliseconds": 170
+    },
+    {
+      "name": "speed/route persistence and invalid saved center recovery",
+      "status": "pass",
+      "milliseconds": 167
+    },
+    {
+      "name": "10000 point limit and bounded undo history",
+      "status": "pass",
+      "milliseconds": 784
+    },
+    {
+      "name": "repeated long-press tools, page and switch interactions remain responsive",
+      "status": "pass",
+      "milliseconds": 15014
+    },
+    {
+      "name": "320/393/480 portrait and 852x393 landscape layout",
+      "status": "pass",
+      "milliseconds": 3420
+    }
+  ],
+  "uncaughtErrors": []
+}
