@@ -3,7 +3,7 @@ package cn.stride.offline;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Pure Java: WGS84 meters, configured speed in km/min, gyro in rad/s. */
+/** Pure Java: WGS84 meters, configured pace in min/km, gyro in rad/s. */
 public final class RouteEngine {
     public static final double EARTH = 6371008.8;
     public static final class Point {
@@ -16,9 +16,9 @@ public final class RouteEngine {
     }
     public final List<Point> points = new ArrayList<>();
     private double[] cumulative;
-    public double total, distance, elapsed, pace=20, steps, amplitude=1;
+    public double total, distance, elapsed, pace=180, steps, amplitude=1;
     public boolean running, finished, gyroEnabled=true;
-    private double lastBearing, yawRate, kilometersPerMinute=3;
+    private double lastBearing, yawRate, minutesPerKilometer=3;
     public synchronized void load(List<Point> route) {
         if (route == null || route.size() < 2 || route.size()>10000) throw new IllegalArgumentException("路线需要 2–10000 个点");
         List<Point> clean=new ArrayList<>();
@@ -30,13 +30,12 @@ public final class RouteEngine {
         points.clear(); points.addAll(clean); cumulative=next; total=next[next.length-1]; reset();
     }
     public synchronized void setPace(double value) {
-        if(!Double.isFinite(value) || value<230 || value>360) throw new IllegalArgumentException("配速须为 3′50″–6′00″ /km");
-        setSpeed(60/value);
+        setSpeed(value/60);
     }
     public synchronized void setSpeed(double value) {
-        if(!Double.isFinite(value) || value<0 || value>5) throw new IllegalArgumentException("速度须为 0–5 公里/分钟");
-        kilometersPerMinute=value;
-        pace=value>0?Math.min(Double.MAX_VALUE,60/value):0;
+        if(!Double.isFinite(value) || value<0 || value>5 || (value>0 && value<.1)) throw new IllegalArgumentException("配速须为 0–5 分钟/公里，最小非零值为 0.1；0 表示停留");
+        minutesPerKilometer=value;
+        pace=value*60;
         if(value==0)yawRate=0;
     }
     public synchronized void start() { if(points.size()<2) throw new IllegalStateException("请先绘制路线"); if(finished) reset(); running=true; }
@@ -84,8 +83,8 @@ public final class RouteEngine {
             amplitude*(.16*Math.cos(phase*.5)+.025*Math.sin(phase*2)),
             amplitude*(.11*Math.sin(phase+.9)+.018*Math.cos(phase*.5))+yawRate};
     }
-    public synchronized double speed(){return kilometersPerMinute;}
-    public synchronized double metersPerSecond(){return kilometersPerMinute*1000/60;}
+    public synchronized double speed(){return minutesPerKilometer;}
+    public synchronized double metersPerSecond(){return minutesPerKilometer>0?1000/(minutesPerKilometer*60):0;}
     public synchronized double cadence(){return Math.min(210,60*metersPerSecond());}
     public static double meters(Point a,Point b){
         double d1=Math.toRadians(b.lat-a.lat),d2=Math.toRadians(b.lon-a.lon);

@@ -71,6 +71,11 @@ const server=http.createServer((req,res)=>{let name;try{name=decodeURIComponent(
    await click('clear');await click('homeMove');
    assert.equal(await page.locator('#homeMove').getAttribute('aria-pressed'),'true');
   });
+  await check('retina and fractional zoom sample finer tiles without stretching',async()=>{
+   await page.evaluate(()=>{zoom=15.25;dirty=true;});await loaded();
+   const tiles=await page.evaluate(()=>({dpr,keys:[...mapTiles.cache.keys()],size:256*2**(zoom-Math.ceil(zoom+Math.log2(Math.min(2,dpr))))}));
+   assert.equal(tiles.dpr,2);assert(tiles.keys.some(key=>key.startsWith('online-amap/17/')));assert(tiles.size<128,'low-resolution tile is being enlarged');
+  });
   await check('Amap tiles, route projection, and touch inverse share GCJ02 at zoom 19',async()=>{
    // Independent landmark fixtures keep a missing or double-applied conversion from
    // passing merely because screen() and locationAt() undo the same mistake.
@@ -240,8 +245,9 @@ const server=http.createServer((req,res)=>{let name;try{name=decodeURIComponent(
     for(const id of ['map','speed','start','mapAttribution']){
      const box=await page.locator('#'+id).boundingBox();assert(box&&box.x>=0&&box.y>=0&&box.x+box.width<=width+.5&&box.y+box.height<=height+.5,id+' outside first screen '+width+'x'+height);
     }
-    for(const id of ['mapStatus','homeMove','homeFreehand','homeWaypoints','locateMe','zoomIn','zoomOut'])assert(await page.locator('#'+id).isVisible(),id+' must remain visible '+width+'x'+height);
+    for(const id of ['mapStatus','homeMove','homeFreehand','homeWaypoints','locateMe','zoomIn','zoomOut','homeOverlay','help'])assert(await page.locator('#'+id).isVisible(),id+' must remain visible '+width+'x'+height);
     for(const selector of ['.home-secondary','.map-hint','.playback-status','.progress-track'])assert(!(await page.locator(selector).isVisible()),selector+' should stay hidden '+width+'x'+height);
+    const overlay=await page.locator('#homeOverlay').boundingBox(),tools=await page.locator('.home-modes').boundingBox();assert(overlay.x>=tools.x+tools.width||overlay.y>=tools.y+tools.height||tools.y>=overlay.y+overlay.height,'floating control overlaps route modes');
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.screenshot({path:path.join(out,`home-${width}x${height}-fixture.png`)});
    }

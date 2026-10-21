@@ -5,11 +5,11 @@ function icon(name){return '<svg viewBox="0 0 24 24" fill="none" stroke="current
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 let toastTimer;function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),4400);}
 const cities=[['全国概览',105,35.5,2.8],['北京',116.4074,39.9042,12],['上海',121.4737,31.2304,12],['广州',113.2644,23.1291,12],['深圳',114.0579,22.5431,12],['杭州',120.1551,30.2741,12],['长沙',112.9388,28.2282,12],['成都',104.0665,30.5723,12],['重庆',106.5516,29.563,12],['武汉',114.3054,30.5931,12],['南京',118.7969,32.0603,12],['西安',108.9398,34.3416,12],['天津',117.2,39.1333,12],['苏州',120.5853,31.2989,12],['郑州',113.6254,34.7466,12],['济南',117.1205,36.6512,12],['青岛',120.3826,36.0671,12],['厦门',118.0894,24.4798,12],['福州',119.2965,26.0745,12],['合肥',117.2272,31.8206,12],['南昌',115.8582,28.6829,12],['昆明',102.8329,24.8801,12],['贵阳',106.6302,26.647,12],['南宁',108.3669,22.817,12],['海口',110.1983,20.044,12],['哈尔滨',126.5349,45.8038,12],['长春',125.3235,43.8171,12],['沈阳',123.4315,41.8057,12],['大连',121.6147,38.914,12],['石家庄',114.5149,38.0428,12],['太原',112.5489,37.8706,12],['呼和浩特',111.7492,40.8426,12],['兰州',103.8343,36.0611,12],['银川',106.2309,38.4872,12],['西宁',101.7782,36.6171,12],['乌鲁木齐',87.6168,43.8256,12],['拉萨',91.1409,29.6456,12],['香港',114.1694,22.3193,12],['澳门',113.5439,22.1987,12],['台北',121.5654,25.033,12]];
-let route=[],history=[],speed=3,pace=20,gyroEnabled=true,mock=!!native,roundTrip=false,mode='move',homeTool='move',editing=false,editorMode='freehand',routeKind='waypoint';
+let route=[],history=[],speed=3,pace=180,gyroEnabled=true,mock=!!native,roundTrip=false,mode='move',homeTool='move',editing=false,editorMode='freehand',routeKind='waypoint';
 let mapCenter=[105,35.5],zoom=2.8,mapName='全国概览',china=null,mapMeta=null,dirty=true;
 let mapSource='online',lastTileSummary={total:0,ready:0,failed:0,loading:0};
 const mapTiles=new MapTiles(()=>{dirty=true;});
-let state={status:'idle',gyro:[0,0,0]},lastError='',chartSeries=[],lastChart=0,overlayEnabled=false;
+let state={status:'idle',gyro:[0,0,0]},lastError='',lastOverlayError='',chartSeries=[],lastChart=0,overlayEnabled=false;
 let commandPending=false,commandDeadline=0,sensorMode='simulation',measured=null;
 let mapInteraction=0,locationRequestInteraction=0,currentLocation=null,locationPending=false;
 const canvas=$('map'),ctx=canvas.getContext('2d'),chart=$('gyroChart'),chartCtx=chart.getContext('2d');
@@ -27,8 +27,8 @@ function distance(a,b){const r=Math.PI/180,d1=(b[1]-a[1])*r,d2=(b[0]-a[0])*r,h=M
 function routeLength(points=route){let n=0;for(let i=1;i<points.length;i++)n+=distance(points[i-1],points[i]);return n;}
 function playbackRoute(){return roundTrip?route.concat(route.slice(0,-1).reverse()):route.slice();}
 function timeLabel(s){s=Math.floor(s||0);return s>=3600?Math.floor(s/3600)+':'+String(Math.floor(s/60)%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
-function config(){return {route:playbackRoute(),speed,speedUnit:'km/min',mock,gyro:gyroEnabled};}
-function persist(){try{localStorage.setItem('stride-v1',JSON.stringify({route,speed,speedUnit:'km/min',gyroEnabled,mock,roundTrip,mapCenter,zoom,mapName,routeKind,mapSource}));}catch(e){}if(native&&overlayEnabled)native.updateOverlayConfig(JSON.stringify(config()));}
+function config(){return {route:playbackRoute(),speed,speedUnit:'min/km',mock,gyro:gyroEnabled};}
+function persist(){try{localStorage.setItem('stride-v1',JSON.stringify({route,speed,speedUnit:'min/km',gyroEnabled,mock,roundTrip,mapCenter,zoom,mapName,routeKind,mapSource}));}catch(e){}if(native&&overlayEnabled)native.updateOverlayConfig(JSON.stringify(config()));}
 function routeSnapshot(){return {route:route.map(p=>p.slice()),roundTrip,routeKind};}
 function restoreRoute(saved){route=saved.route;roundTrip=saved.roundTrip;routeKind=saved.routeKind;}
 function pushHistory(){history.push(routeSnapshot());if(history.length>40)history.shift();}
@@ -37,9 +37,9 @@ function lockCommand(){commandPending=true;commandDeadline=Date.now()+8000;$('st
 function unlockCommand(){commandPending=false;$('start').disabled=false;}
 function mutable(){if(active()){toast('请先结束当前回放，再修改路线');return false;}return true;}
 function updateRoute(){
-  const km=routeLength()/1000*(roundTrip?2:1),duration=speed>0?km*60/speed:0;
+  const km=routeLength()/1000*(roundTrip?2:1),duration=speed>0?km*speed*60:0;
   $('routeDistance').textContent=km.toFixed(2);$('estimatedTime').textContent=speed>0?timeLabel(duration):'—';
-  $('estimatedSteps').textContent=Math.round(duration*Math.min(210,speed*1000)/60).toLocaleString('zh-CN');
+  $('estimatedSteps').textContent=Math.round(duration*Math.min(210,speed>0?1000/speed:0)/60).toLocaleString('zh-CN');
   $('pointCount').textContent=Math.max(0,route.length-1);$('editorDistance').textContent=km.toFixed(2)+' km';
   $('roundTrip').textContent=roundTrip?'往返 ⇄':'单程 ⇄';
   $('undo').disabled=history.length===0;$('editorUndo').disabled=history.length===0;
@@ -48,10 +48,10 @@ function updateRoute(){
   dirty=true;persist();
 }
 function updateSpeed(){
-  pace=speed>0?60/speed:0;$('paceValue').textContent=speed>0?pace.toFixed(1)+' 秒/公里':'原地停留';
+  pace=speed*60;$('paceValue').textContent=speed>0?pace.toFixed(1)+' 秒/公里':'原地停留';
   $('speedValue').textContent=String(Math.round(speed*10)/10);$('speed').value=speed;
   const f=speed/5*100;$('speed').style.background=`linear-gradient(to right,#242424 ${f}%,#dddddd ${f}%)`;
-  $('cadence').textContent=Math.round(Math.min(210,speed*1000));updateRoute();
+  $('cadence').textContent=Math.round(Math.min(210,speed>0?1000/speed:0));updateRoute();
 }
 function syncMode(){
   $('modeDraw').classList.toggle('selected',mode==='draw');$('modeMove').classList.toggle('selected',mode==='move');
@@ -115,7 +115,7 @@ function drawTiles(){
   if(mapSource==='overview')return;
   const source=mapSource==='online'?{id:'online-amap',online:true,url:(z,x,y)=>`https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x=${x}&y=${y}&z=${z}`}:mapMeta&&native?{id:'imported-'+tileVersion,online:false,url:(z,x,y)=>`/tiles/${z}/${x}/${y}`} :null;
   if(!source)return;
-  lastTileSummary=mapTiles.draw(ctx,{center:mapCoordinates(mapCenter),zoom,width,height},source);
+  lastTileSummary=mapTiles.draw(ctx,{center:mapCoordinates(mapCenter),zoom,width,height,dpr},source);
 }
 function updateMapStatus(){
   const online=mapSource==='online',imported=mapSource==='imported',s=lastTileSummary;
@@ -200,6 +200,7 @@ function applyState(next){
   $('progressBar').style.width=fraction*100+'%';$('progressLabel').textContent=running||paused||finished?Math.round(fraction*100)+'% COMPLETED':'ROUTE SIMULATOR';
   $('liveDistance').textContent=((next.distance||0)/1000).toFixed(2);$('liveTime').textContent=timeLabel(next.elapsed);$('liveSteps').textContent=(next.steps||0).toLocaleString('zh-CN');
   $('sensorStatus').textContent=running?(gyroEnabled?'模拟中':'已关闭'):paused?'已暂停':'待开始';
+  $('locationPublication').textContent=next.mock&&Number.isFinite(next.locationAgeMs)&&next.locationAgeMs>=0?'系统定位已提交 '+next.locationUpdates+' 次 · 最近 '+next.locationAgeMs+' ms 前':next.mock===false?'App 内预览':'等待系统定位更新';
   $('coords').textContent=Number.isFinite(next.lon)?Math.abs(next.lat).toFixed(6)+'° '+(next.lat<0?'S':'N')+', '+Math.abs(next.lon).toFixed(6)+'° '+(next.lon<0?'W':'E'):'等待开始回放';
   const g=next.gyro||[0,0,0];['gx','gy','gz'].forEach((id,i)=>$(id).textContent=Number(g[i]||0).toFixed(3));
   if(sensorMode==='device')renderMeasured();
@@ -211,12 +212,12 @@ const browserPlayback={data:null,distance:0,elapsed:0,steps:0,running:false,fini
   snapshot(){
     if(!this.data)return {status:'idle',gyro:[0,0,0]};
     const now=performance.now(),dt=(now-this.last)/1000;this.last=now;
-    const points=this.data.route,total=routeLength(points),velocity=speed*1000/60,cadence=Math.min(210,speed*1000);
+    const points=this.data.route,total=routeLength(points),velocity=speed>0?1000/(speed*60):0,cadence=Math.min(210,speed>0?1000/speed:0);
     if(this.running){const used=velocity>0?Math.min(dt,(total-this.distance)/velocity):dt;this.distance+=velocity*used;this.elapsed+=used;this.steps+=cadence*used/60;if(velocity>0&&this.distance>=total){this.distance=total;this.running=false;this.finished=true;}}
     let remaining=this.distance,p=points[points.length-1];
     for(let i=1;i<points.length;i++){const d=distance(points[i-1],points[i]);if(remaining<=d){const f=d?remaining/d:0;p=[points[i-1][0]+(points[i][0]-points[i-1][0])*f,points[i-1][1]+(points[i][1]-points[i-1][1])*f];break;}remaining-=d;}
     const ph=this.elapsed*cadence/60*2*Math.PI,g=this.running&&velocity>0&&gyroEnabled?[.22*Math.sin(ph)+.035*Math.sin(2*ph+.6),.16*Math.cos(ph*.5)+.025*Math.sin(ph*2),.11*Math.sin(ph+.9)+.018*Math.cos(ph*.5)]:[0,0,0];
-    return {status:this.finished?'finished':this.running?'running':'paused',mock:false,total,distance:this.distance,elapsed:this.elapsed,steps:Math.floor(this.steps),lat:p[1],lon:p[0],gyro:g,speed,speedUnit:'km/min',pace,cadence};
+    return {status:this.finished?'finished':this.running?'running':'paused',mock:false,total,distance:this.distance,elapsed:this.elapsed,steps:Math.floor(this.steps),lat:p[1],lon:p[0],gyro:g,speed,speedUnit:'min/km',pace,cadence};
   }};
 
 function start(){
@@ -225,7 +226,7 @@ function start(){
   const points=playbackRoute(),length=routeLength(points);if(points.length<2||length<1){toast('请先在地图上绘制至少 1 米的路线');return;}if(length>1000000||points.length>10000){toast('路线过长，请控制在 1000 公里、10000 个点以内');return;}
   if(native){lockCommand();native.start(JSON.stringify(config()));}else{browserPlayback.start(config());applyState(browserPlayback.snapshot());}
 }
-function exportData(){const fallback=JSON.stringify({format:'stride-route-v1',coordinates:'WGS84',route:playbackRoute(),speed,speedUnit:'km/min',sensorSource:'synthetic; app-local only; rad/s',state},null,2);if(native)native.export(fallback);else{const a=document.createElement('a'),url=URL.createObjectURL(new Blob([fallback],{type:'application/json'}));a.href=url;a.download='stride-route.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);toast('已导出路线与当前模拟数据');}}
+function exportData(){const fallback=JSON.stringify({format:'stride-route-v1',coordinates:'WGS84',route:playbackRoute(),speed,speedUnit:'min/km',sensorSource:'synthetic; app-local only; rad/s',state},null,2);if(native)native.export(fallback);else{const a=document.createElement('a'),url=URL.createObjectURL(new Blob([fallback],{type:'application/json'}));a.href=url;a.download='stride-route.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);toast('已导出路线与当前模拟数据');}}
 function drawChart(){const r=chart.getBoundingClientRect();if(!r.width)return;chart.width=Math.round(r.width*dpr);chart.height=Math.round(r.height*dpr);chartCtx.setTransform(dpr,0,0,dpr,0,0);const w=r.width,h=r.height;chartCtx.clearRect(0,0,w,h);chartCtx.strokeStyle='#3b3b3b';chartCtx.lineWidth=.6;chartCtx.setLineDash([2,4]);for(let y=15;y<h;y+=35){chartCtx.beginPath();chartCtx.moveTo(0,y);chartCtx.lineTo(w,y);chartCtx.stroke();}chartCtx.setLineDash([]);['#f9f9f9','#a5a5a5','#6f6f6f'].forEach((color,axis)=>{chartCtx.strokeStyle=color;chartCtx.lineWidth=axis===0?1.5:1;chartCtx.setLineDash(axis===2?[4,3]:[]);chartCtx.beginPath();const data=chartSeries.length?chartSeries:[[0,0,0]];data.forEach((g,i)=>{const x=w-(data.length-1-i)*w/110,y=h/2-g[axis]*h*1.1;if(i)chartCtx.lineTo(x,y);else chartCtx.moveTo(x,y);});chartCtx.stroke();});chartCtx.setLineDash([]);}
 function updateMapMeta(meta){mapMeta=meta&&meta.available?meta:null;tileVersion++;mapTiles.clear();if(mapMeta){$('importedName').textContent=mapMeta.name||'已导入离线地图';$('importedDescription').textContent='本地地图 · '+((mapMeta.size||0)/1048576).toFixed(1)+' MB · 完全离线';$('showImported').hidden=false;}else if(mapSource==='imported')mapSource='overview';updateSourceUI();dirty=true;}
 function validMapCoordinate(point){return point.length===2&&point.every(Number.isFinite)&&Math.abs(point[0])<=180&&Math.abs(point[1])<=85.05112878;}
@@ -241,7 +242,7 @@ function showImported(){
   mapName=mapMeta.name||'本地地图';$('cityLabel').textContent=mapName;showPage('route');dirty=true;persist();
 }
 window.nativeEvent=(type,value)=>{if(type==='location'){receiveLocation(value);}else if(type==='locationError'){locationError(value);}else if(type==='setup'){unlockCommand();toast(value);showSheet('helpSheet');}else if(type==='error'){unlockCommand();toast(value);}else if(type==='map'){try{updateMapMeta(JSON.parse(value));showImported();toast('离线地图已导入');}catch(e){toast('地图信息读取失败');}}else if(type==='overlay'){overlayEnabled=value==='true';updateOverlayUI();if(overlayEnabled)toast('悬浮控制已开启，返回桌面即可使用');}else toast(value);};
-function updateOverlayUI(){$('overlayToggle').classList.toggle('on',overlayEnabled);$('overlayToggle').setAttribute('aria-checked',String(overlayEnabled));}
+function updateOverlayUI(){$('overlayToggle').classList.toggle('on',overlayEnabled);$('overlayToggle').setAttribute('aria-checked',String(overlayEnabled));$('homeOverlay').classList.toggle('selected',overlayEnabled);$('homeOverlay').setAttribute('aria-pressed',String(overlayEnabled));}
 function displayedGyro(){return sensorMode==='device'?(measured&&measured.gyroFresh?measured.gyro:[0,0,0]):state.gyro||[0,0,0];}
 function renderMeasured(){
   if(!measured)return;
@@ -262,7 +263,8 @@ function setSensorMode(mode){
 }
 $('sensorSimulation').onclick=()=>setSensorMode('simulation');$('sensorDevice').onclick=()=>setSensorMode('device');
 $('sensorSettings').onclick=()=>{if(native&&native.sensorSettings)native.sensorSettings();};
-$('overlayToggle').onclick=()=>{if(!native){toast('悬浮窗需安装 Android APK，并允许“显示在其他应用上层”');return;}if(!overlayEnabled&&(route.length<2||routeLength()<1)){toast('请先绘制至少 1 米的路线，再开启悬浮控制');return;}native.overlay(!overlayEnabled,JSON.stringify(config()));};
+$('homeOverlay').onclick=()=>{$('overlayToggle').click();};
+$('overlayToggle').onclick=()=>{if(!native){toast('悬浮窗需安装 Android APK，并允许“显示在其他应用上层”');return;}native.overlay(!overlayEnabled,JSON.stringify(config()));};
 $('speed').oninput=e=>{speed=Math.max(0,Math.min(5,Number(e.target.value)));updateSpeed();if(native&&native.speed)native.speed(speed);};
 function updateGyroUI(){$('gyroToggle').classList.toggle('on',gyroEnabled);$('gyroToggle').setAttribute('aria-checked',String(gyroEnabled));$('gyroBadge').textContent=gyroEnabled?'已开启':'已关闭';}
 $('gyroToggle').onclick=()=>{gyroEnabled=!gyroEnabled;updateGyroUI();if(native)native.gyro(gyroEnabled);persist();};
@@ -279,7 +281,7 @@ $('mapStatus').onclick=()=>showSheet('mapSourceSheet');$('sourceOnline').onclick
 window.addEventListener('offline',()=>{mapTiles.suspend();dirty=true;});window.addEventListener('online',()=>{if(mapSource==='online')retryMap();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)mapTiles.suspend();else dirty=true;});
 $('openSettings').onclick=()=>native?native.developerSettings():toast('请在安装后的 Android App 中打开开发者选项');$('enableNotifications').onclick=()=>native?native.notifications():toast('通知控制在 Android App 中可用');
-try{const saved=JSON.parse(localStorage.getItem('stride-v1')||'null');if(saved){if(Array.isArray(saved.route)&&saved.route.length<=10000&&saved.route.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=180&&Math.abs(p[1])<85.05113))route=saved.route;if(saved.speedUnit==='km/min'&&Number.isFinite(saved.speed))speed=Math.max(0,Math.min(5,saved.speed));gyroEnabled=saved.gyroEnabled!==false;mock=native?saved.mock!==false:false;roundTrip=!!saved.roundTrip;if(Array.isArray(saved.mapCenter)&&saved.mapCenter.length===2&&saved.mapCenter.every(Number.isFinite)&&Math.abs(saved.mapCenter[0])<=180&&Math.abs(saved.mapCenter[1])<=85.05112878)mapCenter=saved.mapCenter;if(Number.isFinite(saved.zoom))zoom=Math.max(2,Math.min(19,saved.zoom));mapName=String(saved.mapName||'全国概览');routeKind=saved.routeKind==='freehand'?'freehand':'waypoint';}}catch(e){}
+try{const saved=JSON.parse(localStorage.getItem('stride-v1')||'null');if(saved){if(Array.isArray(saved.route)&&saved.route.length<=10000&&saved.route.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=180&&Math.abs(p[1])<85.05113))route=saved.route;if(saved.speedUnit==='min/km'&&Number.isFinite(saved.speed))speed=Math.max(0,Math.min(5,saved.speed));gyroEnabled=saved.gyroEnabled!==false;mock=native?saved.mock!==false:false;roundTrip=!!saved.roundTrip;if(Array.isArray(saved.mapCenter)&&saved.mapCenter.length===2&&saved.mapCenter.every(Number.isFinite)&&Math.abs(saved.mapCenter[0])<=180&&Math.abs(saved.mapCenter[1])<=85.05112878)mapCenter=saved.mapCenter;if(Number.isFinite(saved.zoom))zoom=Math.max(2,Math.min(19,saved.zoom));mapName=String(saved.mapName||'全国概览');routeKind=saved.routeKind==='freehand'?'freehand':'waypoint';}}catch(e){}
 if(!native&&mapSource==='imported')mapSource='overview';updateSourceUI();$('cityLabel').textContent='中国 · '+mapName;$('gyroToggle').classList.toggle('on',gyroEnabled);$('gyroToggle').setAttribute('aria-checked',String(gyroEnabled));$('gyroBadge').textContent=gyroEnabled?'已开启':'已关闭';setMock(mock);updateSpeed();
 fetch('maps/china.geojson').then(r=>r.json()).then(data=>{china=data;dirty=true;}).catch(()=>toast('全国概览加载失败，请重新打开应用'));
 if(native){try{updateMapMeta(JSON.parse(native.mapInfo()));overlayEnabled=JSON.parse(native.overlayState()).enabled;updateOverlayUI();}catch(e){} }
@@ -293,5 +295,5 @@ function setupRouteTools(){
   $('routeToolsSheet').querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{if($('routeToolsSheet').open)closeSheet();}));
 }
 setupRouteTools();syncMode();requestLocation();
-setInterval(()=>{try{if(sensorMode==='device'&&native&&native.sensorState)measured=JSON.parse(native.sensorState());applyState(native?JSON.parse(native.state()):browserPlayback.snapshot());if(native){const enabled=JSON.parse(native.overlayState()).enabled;if(enabled!==overlayEnabled){overlayEnabled=enabled;updateOverlayUI();}}}catch(e){if(commandPending&&Date.now()>commandDeadline)unlockCommand();}},150);
+setInterval(()=>{try{if(sensorMode==='device'&&native&&native.sensorState)measured=JSON.parse(native.sensorState());applyState(native?JSON.parse(native.state()):browserPlayback.snapshot());if(native){const overlay=JSON.parse(native.overlayState()),enabled=!!overlay.enabled;if(enabled!==overlayEnabled){overlayEnabled=enabled;updateOverlayUI();if(enabled)toast('悬浮控制已开启，返回桌面即可使用');}if(overlay.error&&overlay.error!==lastOverlayError)toast(overlay.error);lastOverlayError=overlay.error||'';}}catch(e){if(commandPending&&Date.now()>commandDeadline)unlockCommand();}},150);
 function frame(now){if(dirty&&!document.hidden&&$('page-route').classList.contains('active'))drawMap();if(now-lastChart>100){chartSeries.push(displayedGyro());if(chartSeries.length>111)chartSeries.shift();if($('page-motion').classList.contains('active'))drawChart();lastChart=now;}requestAnimationFrame(frame);}requestAnimationFrame(frame);

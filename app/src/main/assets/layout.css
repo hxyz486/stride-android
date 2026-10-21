@@ -207,3 +207,11 @@ main::-webkit-scrollbar{display:none}
 .trimmed-home .route-tools .run-mode{display:flex;margin:14px 0!important;height:40px!important}
 .trimmed-home .route-tools .run-mode button{font-size:11px!important}
 .trimmed-home .route-tools>.outline-button,.trimmed-home .route-tools #routeToolsContent>.outline-button{margin-top:10px;min-height:40px}
+
+.header-actions{display:flex;align-items:center;gap:8px}
+.overlay-shortcut{border:1px solid #d4d4d4;border-radius:7px;padding:8px 10px;font-size:11px;min-height:36px;white-space:nowrap}
+.overlay-shortcut.selected{background:#242424;color:#fff;border-color:#242424}
+
+.route-home:not(.editing) .header-actions{position:relative;width:36px;height:36px;display:block}
+.overlay-shortcut{display:none;background:#fffffff2}
+.route-home:not(.editing) .overlay-shortcut{display:block;position:absolute;right:0;top:48px}

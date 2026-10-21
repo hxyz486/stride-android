@@ -37,7 +37,7 @@ const screenshot=name=>fs.writeFileSync(path.join(out,name),execFileSync(adbPath
  try{
   await command('Network.enable');
   await until("typeof showPage==='function'&&typeof mapTiles!=='undefined'&&typeof china!=='undefined'&&china",15000);
-  assert((await evaluate('navigator.userAgent')).includes('Stride/1.3.1'));
+  assert((await evaluate('navigator.userAgent')).includes('Stride/1.3.2'));
   await evaluate("showPage('route');setMapSource('online');moveTo(cities.find(c=>c[0]==='长沙'));zoom=16;retryMap()");
   // Let the entire viewport settle before observing the outcome. One decoded
   // tile cannot establish that a usable street map appeared on the device.

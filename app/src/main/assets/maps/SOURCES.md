@@ -10,7 +10,7 @@ The map displays “© 高德地图” linked to https://www.amap.com/ . The app
 
 On 2026-10-21, actual zoom-16 street tiles for Beijing (`53958/24830`) and Changsha (`53328/27408`) returned HTTP 200 PNG images on the development network. The returned maps showed Chinese street labels. This verifies the sampled requests; device-network availability and map detail can vary. See the project TESTING.md for the complete validation scope.
 
-Requests are limited to the current visible viewport, with a maximum zoom of 19. There is no prefetch, bulk downloader, national tile archive, or offline export of this service. Android uses normal WebView HTTPS requests and its default HTTP cache, honoring service cache headers. The WebView User-Agent appends `Stride/1.3.1 (cn.stride.offline)`. Browser previews retain their ordinary browser identification. Cache retention is not guaranteed and is not an offline-map feature.
+Requests are limited to the current visible viewport, with a maximum zoom of 19. There is no prefetch, bulk downloader, national tile archive, or offline export of this service. Android uses normal WebView HTTPS requests and its default HTTP cache, honoring service cache headers. The WebView User-Agent appends `Stride/1.3.2 (cn.stride.offline)`. Browser previews retain their ordinary browser identification. Cache retention is not guaranteed and is not an offline-map feature.
 
 The online basemap uses GCJ-02 display coordinates. The app converts WGS84 route and city coordinates for display and converts drawn points back to WGS84. Stored routes, playback, coordinate input, and exported data remain WGS84 when switching sources. Tile requests disclose the viewed area to the map service; full routes and session records are not uploaded by this app.
 

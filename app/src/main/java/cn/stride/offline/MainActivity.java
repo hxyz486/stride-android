@@ -47,7 +47,7 @@ public final class MainActivity extends Activity {
         settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setDefaultTextEncodingName("UTF-8");settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString()+" Stride/1.3.1 (cn.stride.offline)");
+        settings.setUserAgentString(settings.getUserAgentString()+" Stride/1.3.2 (cn.stride.offline)");
         web.addJavascriptInterface(new Bridge(),"Native");
         web.setWebViewClient(new WebViewClient(){
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){
@@ -187,10 +187,10 @@ public final class MainActivity extends Activity {
             Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);
             startActivityForResult(i,21);
         });}
-        @JavascriptInterface public String overlayState(){return "{\"enabled\":"+(OverlayService.active!=null)+",\"permission\":"+Settings.canDrawOverlays(MainActivity.this)+"}";}
+        @JavascriptInterface public String overlayState(){try{return new JSONObject().put("enabled",OverlayService.active!=null).put("permission",Settings.canDrawOverlays(MainActivity.this)).put("error",OverlayService.lastError).toString();}catch(Exception e){return "{}";}}
         @JavascriptInterface public void updateOverlayConfig(String config){getSharedPreferences("stride",0).edit().putString("overlayConfig",config).apply();}
         @JavascriptInterface public void overlay(boolean enabled,String config){runOnUiThread(()->{
-            if(!enabled){pendingOverlay=false;stopService(new Intent(MainActivity.this,OverlayService.class));event("overlay","false");return;}
+            if(!enabled){pendingOverlay=false;getSharedPreferences("stride",0).edit().putBoolean("overlayEnabled",false).apply();stopService(new Intent(MainActivity.this,OverlayService.class));event("overlay","false");return;}
             getSharedPreferences("stride",0).edit().putString("overlayConfig",config).apply();
             if(!Settings.canDrawOverlays(MainActivity.this)){
                 pendingOverlay=true;
@@ -205,11 +205,12 @@ public final class MainActivity extends Activity {
         });}
     }
     private void enableOverlay(){
-        try{startForegroundService(new Intent(this,OverlayService.class));event("overlay","true");}
+        try{getSharedPreferences("stride",0).edit().putBoolean("overlayEnabled",true).apply();startForegroundService(new Intent(this,OverlayService.class));}
         catch(Exception e){event("error","悬浮窗启动失败："+e.getMessage());}
     }
     @Override protected void onResume(){super.onResume();visible=true;if(deviceSensors)motion.start();OverlayService.appVisible=true;if(OverlayService.active!=null)OverlayService.active.visibility(false);
         if(pendingOverlay){pendingOverlay=false;if(Settings.canDrawOverlays(this))enableOverlay();else event("error","尚未允许悬浮窗权限，可稍后在运动数据页面重新开启");}
+        else if(OverlayService.active==null && Settings.canDrawOverlays(this) && getSharedPreferences("stride",0).getBoolean("overlayEnabled",false))enableOverlay();
         if(resumeMapLocation&&!pendingMapLocation)locateMap(false);
     }
     @Override protected void onPause(){visible=false;motion.stop();super.onPause();}

@@ -5,85 +5,91 @@
     {
       "name": "online is the default and visible tiles decode successfully",
       "status": "pass",
-      "milliseconds": 268
+      "milliseconds": 365
     },
     {
       "name": "original map controls remain visible while lower data panels are trimmed",
       "status": "pass",
-      "milliseconds": 1484
+      "milliseconds": 1535
+    },
+    {
+      "name": "retina and fractional zoom sample finer tiles without stretching",
+      "status": "pass",
+      "milliseconds": 236
     },
     {
       "name": "Amap tiles, route projection, and touch inverse share GCJ02 at zoom 19",
       "status": "pass",
-      "milliseconds": 28
+      "milliseconds": 54
     },
     {
       "name": "online pan and pinch retain the geographic anchor and never edit route",
       "status": "pass",
-      "milliseconds": 1547
+      "milliseconds": 1788
     },
     {
       "name": "source buttons preserve exact WGS84 route; overview and import issue no remote requests",
       "status": "pass",
-      "milliseconds": 1208
+      "milliseconds": 1504
     },
     {
       "name": "switching sources cancels pan/pinch and rolls back an unfinished freehand stroke",
       "status": "pass",
-      "milliseconds": 228
+      "milliseconds": 418
     },
     {
       "name": "malformed imported metadata keeps a valid WGS84 center and can return online",
       "status": "pass",
-      "milliseconds": 101
+      "milliseconds": 200
     },
     {
       "name": "partial network failure stays visible and retry recovers all viewport tiles",
       "status": "pass",
-      "milliseconds": 759
+      "milliseconds": 845
     },
     {
       "name": "unresponsive image requests time out and can be retried",
       "status": "pass",
-      "milliseconds": 862
+      "milliseconds": 941
     },
     {
       "name": "rapid panning and zooming keep downloads and tile cache bounded",
       "status": "pass",
-      "milliseconds": 2002
+      "milliseconds": 5323
     },
     {
       "name": "cold launch returns to online map without changing saved WGS84 route or center",
       "status": "pass",
-      "milliseconds": 213
+      "milliseconds": 790
     },
     {
       "name": "source menu offers offline overview after a tile failure",
       "status": "pass",
-      "milliseconds": 387
+      "milliseconds": 554
     },
     {
       "name": "cold launch automatically locates through native bridge and preserves saved WGS84 route",
       "status": "pass",
-      "milliseconds": 120
+      "milliseconds": 503
     },
     {
       "name": "location denial preserves the map and manual retry recenters without changing route",
       "status": "pass",
-      "milliseconds": 71
+      "milliseconds": 183
     },
     {
       "name": "invalid or simulated location is rejected and a late fix respects manual map selection",
       "status": "pass",
-      "milliseconds": 29
+      "milliseconds": 144
     },
     {
       "name": "map tools, speed and start remain on the first screen without lower data panels",
       "status": "pass",
-      "milliseconds": 307
+      "milliseconds": 493
     }
   ],
-  "tileRequestsIntercepted": 536,
-  "importedTileFixtures": 16,
-  "uncaughtErrors": []
+  "tileRequestsIntercepted": 1493,
+  "importedTileFixtures": 22,
+  "uncaughtErrors": [],
+  "version": "1.3.2"
 }

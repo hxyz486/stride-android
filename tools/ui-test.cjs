@@ -34,7 +34,7 @@ const server=http.createServer((req,res)=>{const name=decodeURIComponent(req.url
   await click('roundTrip');await click('editorDone');
   await speed(0);assert.equal(Number(await page.locator('#speedValue').textContent()),0);await click('start');await page.waitForTimeout(700);
   assert.equal(await page.evaluate(()=>state.status),'running');assert.equal(await page.evaluate(()=>state.distance),0);assert.equal(await page.evaluate(()=>state.steps),0);
-  await speed(5);assert.equal(Number(await page.locator('#speedValue').textContent()),5);await page.waitForTimeout(450);assert((await page.evaluate(()=>state.distance))>20,'5 km/min did not move at the declared speed');
+  await speed(5);assert.equal(Number(await page.locator('#speedValue').textContent()),5);await page.waitForTimeout(450);assert((await page.evaluate(()=>state.distance))>.8,'5 min/km did not move at the declared speed');
   await speed(0);await page.waitForTimeout(180);const stopped=await page.evaluate(()=>({distance:state.distance,steps:state.steps}));await page.waitForTimeout(350);assert.deepEqual(await page.evaluate(()=>({distance:state.distance,steps:state.steps})),stopped,'zero speed advanced distance or steps');
   await speed(3);await page.waitForTimeout(300);assert((await page.evaluate(()=>state.distance))>stopped.distance);
   await click('start');await page.waitForTimeout(180);const paused=await page.evaluate(()=>state.distance);await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>state.distance),paused);
@@ -48,6 +48,6 @@ const server=http.createServer((req,res)=>{const name=decodeURIComponent(req.url
   await page.reload();await page.waitForFunction(()=>typeof china!=='undefined'&&china);await page.evaluate(()=>setMapSource('overview'));assert(Math.abs(parseFloat(await page.locator('#routeDistance').textContent())-sampleLength)<.01);assert.equal(await page.locator('#speed').inputValue(),'3');
   for(const width of [320,393,480]){await page.setViewportSize({width,height:852});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'horizontal overflow '+width);}
   assert.deepEqual(errors,[]);
-  console.log('PASS: long-press route tools, editing, waypoints, undo, round trip, 0–5 km/min speed/default 3, zero-speed standstill, live speed changes, pause/resume, gyro, city search, persistence and mobile widths; no uncaught errors.');
+  console.log('PASS: long-press route tools, editing, waypoints, undo, round trip, 0–5 min/km speed/default 3, zero-speed standstill, live speed changes, pause/resume, gyro, city search, persistence and mobile widths; no uncaught errors.');
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;server.close();});

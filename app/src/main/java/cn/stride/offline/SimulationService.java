@@ -10,7 +10,7 @@ import java.util.*;
 
 public final class SimulationService extends Service {
     public static volatile SimulationService active;
-    private static final String IDLE_STATE="{\"status\":\"idle\",\"speed\":3,\"speedUnit\":\"km/min\"}";
+    private static final String IDLE_STATE="{\"status\":\"idle\",\"speed\":3,\"speedUnit\":\"min/km\"}";
     public static volatile String lastState=IDLE_STATE;
     private static volatile JSONObject lastSession;
     private final RouteEngine engine=new RouteEngine();
@@ -20,15 +20,16 @@ public final class SimulationService extends Service {
     private final ArrayDeque<JSONObject> samples=new ArrayDeque<>();
     private int droppedSamples;
     private LocationManager locations;
+    private PowerManager.WakeLock playbackWakeLock;
     private boolean mock,closed,initialized,ready;
-    private long previous,lastSample;
+    private long previous,lastSample,lastLocationPublished,locationUpdates;
     private String error="";
     private final Runnable ticker=new Runnable(){ public void run(){
         synchronized(SimulationService.this){
             if(closed)return;
             long now=SystemClock.elapsedRealtime();
             engine.tick((now-previous)/1000.0); previous=now;
-            try { if(mock && engine.running) publishLocation(); }
+            try { if(mock && ready) publishLocation(); }
             catch(Exception e){ fail("模拟定位中断："+friendly(e));return; }
             if(now-lastSample>=1000){record();lastSample=now;}
             lastState=snapshot();
@@ -56,7 +57,7 @@ public final class SimulationService extends Service {
             JSONArray route=config.getJSONArray("route");List<RouteEngine.Point> points=new ArrayList<>();
             for(int i=0;i<route.length();i++){JSONArray p=route.getJSONArray(i);points.add(new RouteEngine.Point(p.getDouble(1),p.getDouble(0)));}
             engine.load(points);
-            if(config.has("speed"))engine.setSpeed(config.getDouble("speed"));
+            if(config.has("speed") && "min/km".equals(config.optString("speedUnit")))engine.setSpeed(config.getDouble("speed"));
             else if(config.has("pace"))engine.setPace(config.getDouble("pace"));
             else engine.setSpeed(3);
             engine.gyroEnabled=config.optBoolean("gyro",true);
@@ -66,6 +67,7 @@ public final class SimulationService extends Service {
             else startForeground(1,notification);
             if(mock) prepareProviders();
             engine.start();ready=true;closed=false;previous=SystemClock.elapsedRealtime();lastSample=0;
+            updateWakeLock();
             ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(1,notification());
             if(mock)publishLocation();lastState=snapshot();
             handler.removeCallbacks(ticker);handler.post(ticker);
@@ -87,16 +89,33 @@ public final class SimulationService extends Service {
             l.setVerticalAccuracyMeters(10);l.setSpeedAccuracyMetersPerSecond(.15f);l.setBearingAccuracyDegrees(5);
             locations.setTestProviderLocation(provider,l);
         }
+        lastLocationPublished=SystemClock.elapsedRealtime();locationUpdates++;
+    }
+    private void updateWakeLock(){
+        if(engine.running && engine.metersPerSecond()>0){
+            if(playbackWakeLock==null){
+                playbackWakeLock=((PowerManager)getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"Stride:RoutePlayback");
+                playbackWakeLock.setReferenceCounted(false);
+            }
+            if(!playbackWakeLock.isHeld())playbackWakeLock.acquire();
+        }else if(playbackWakeLock!=null && playbackWakeLock.isHeld())playbackWakeLock.release();
     }
     public synchronized void toggle(){
         if(!ready||closed)return;
         if(engine.running)engine.pause();else if(!engine.finished)engine.start();
+        updateWakeLock();
         previous=SystemClock.elapsedRealtime();
         try{if(mock)publishLocation();}catch(Exception e){fail(friendly(e));return;}
         lastState=snapshot();((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(1,notification());
     }
-    public synchronized void pace(double seconds){ engine.setPace(seconds);lastState=snapshot(); }
-    public synchronized void setSpeed(double kilometersPerMinute){engine.setSpeed(kilometersPerMinute);lastState=snapshot();}
+    public synchronized void pace(double seconds){setSpeed(seconds/60);}
+    public synchronized void setSpeed(double minutesPerKilometer){
+        long now=SystemClock.elapsedRealtime();engine.tick((now-previous)/1000.0);previous=now;
+        engine.setSpeed(minutesPerKilometer);
+        updateWakeLock();
+        try{if(mock)publishLocation();}catch(Exception e){fail(friendly(e));return;}
+        lastState=snapshot();
+    }
     public synchronized void gyro(boolean enabled){engine.gyroEnabled=enabled;lastState=snapshot();}
     public synchronized void stop(){engine.pause();record();release();lastState=IDLE_STATE;stopSelf();}
     private void fail(String message){error=message;engine.pause();lastState=snapshot();release();stopSelf();}
@@ -105,7 +124,8 @@ public final class SimulationService extends Service {
             JSONObject s=new JSONObject();RouteEngine.Point p=engine.position();double[] g=engine.gyro();
             s.put("status",!error.isEmpty()?"error":!ready?"starting":engine.finished?"finished":engine.running?"running":"paused");
             s.put("error",error);s.put("mock",mock);s.put("distance",engine.distance);s.put("total",engine.total);
-            s.put("elapsed",engine.elapsed);s.put("steps",(int)engine.steps);s.put("speed",engine.speed());s.put("speedUnit","km/min");s.put("pace",engine.pace);
+            s.put("elapsed",engine.elapsed);s.put("steps",(int)engine.steps);s.put("speed",engine.speed());s.put("speedUnit","min/km");s.put("pace",engine.pace);
+            s.put("locationUpdates",locationUpdates);s.put("locationAgeMs",lastLocationPublished>0?SystemClock.elapsedRealtime()-lastLocationPublished:-1);
             s.put("lat",p.lat);s.put("lon",p.lon);s.put("bearing",engine.bearing());
             s.put("gyro",new JSONArray(g));s.put("gyroEnabled",engine.gyroEnabled);s.put("cadence",engine.cadence());s.put("sampleCount",samples.size());return s.toString();
         }catch(JSONException e){return "{\"status\":\"error\",\"error\":\"状态生成失败\"}";}
@@ -117,7 +137,7 @@ public final class SimulationService extends Service {
     private synchronized JSONObject sessionObject(){
         try{
             JSONObject j=new JSONObject();j.put("format","stride-session-v1");j.put("coordinates","WGS84");
-            j.put("speedUnit","km/min");
+            j.put("speedUnit","min/km");
             j.put("sensorSource","synthetic; app-local only; rad/s");j.put("systemMockLocation",mock);
             j.put("sampleIntervalSeconds",1);j.put("sampleLimit",SAMPLE_LIMIT);j.put("droppedSamples",droppedSamples);
             JSONArray route=new JSONArray();for(RouteEngine.Point p:engine.points)route.put(new JSONArray(new double[]{p.lon,p.lat}));
@@ -138,6 +158,7 @@ public final class SimulationService extends Service {
     }
     private void release(){
         closed=true;handler.removeCallbacks(ticker);lastSession=sessionObject();
+        if(playbackWakeLock!=null && playbackWakeLock.isHeld())playbackWakeLock.release();
         for(String p:providers)try{locations.removeTestProvider(p);}catch(Exception ignored){}
         providers.clear();stopForeground(STOP_FOREGROUND_REMOVE);
     }

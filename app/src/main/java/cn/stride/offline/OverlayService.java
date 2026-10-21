@@ -18,6 +18,7 @@ import org.json.*;
 /** User-granted overlay; never hooks other applications or sensor services. */
 public final class OverlayService extends Service {
     public static volatile OverlayService active;
+    public static volatile String lastError="";
     public static volatile boolean appVisible=true;
     private WindowManager windows;
     private LinearLayout panel;
@@ -28,14 +29,14 @@ public final class OverlayService extends Service {
     private int dp(float n){return (int)(getResources().getDisplayMetrics().density*n+.5f);}
     private GradientDrawable background(int fill,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(fill);d.setCornerRadius(dp(radius));if(stroke!=0)d.setStroke(dp(1),stroke);return d;}
     private TextView text(String value,int size,int color){TextView v=new TextView(this);v.setText(value);v.setTextColor(color);v.setTextSize(size);v.setGravity(Gravity.CENTER_VERTICAL);v.setFontFeatureSettings("tnum");return v;}
-    @Override public void onCreate(){super.onCreate();active=this;
-        if(!Settings.canDrawOverlays(this)){stopSelf();return;}
+    @Override public void onCreate(){super.onCreate();lastError="";
+        if(!Settings.canDrawOverlays(this)){lastError="悬浮窗权限未允许，请在系统设置中允许“显示在其他应用上层”";stopSelf();return;}
         windows=(WindowManager)getSystemService(WINDOW_SERVICE);
         panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(12),dp(8),dp(12),dp(12));
         panel.setBackground(background(Color.rgb(248,248,245),Color.rgb(200,200,196),16));panel.setElevation(dp(10));
         LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title=text("STRIDE 行迹",11,Color.BLACK);title.setTypeface(null,Typeface.BOLD);header.addView(title,new LinearLayout.LayoutParams(0,dp(26),1));
-        TextView close=text("×",22,Color.GRAY);close.setGravity(Gravity.CENTER);close.setContentDescription("关闭悬浮窗，保留当前回放");header.addView(close,new LinearLayout.LayoutParams(dp(28),dp(28)));close.setOnClickListener(v->stopSelf());panel.addView(header);
+        TextView close=text("×",22,Color.GRAY);close.setGravity(Gravity.CENTER);close.setContentDescription("关闭悬浮窗，保留当前回放");header.addView(close,new LinearLayout.LayoutParams(dp(28),dp(28)));close.setOnClickListener(v->closeOverlay());panel.addView(header);
         status=text("准备就绪",10,Color.GRAY);panel.addView(status,new LinearLayout.LayoutParams(-1,dp(29)));
         LinearLayout controls=new LinearLayout(this);
         button=text("▶  开始",12,Color.WHITE);button.setGravity(Gravity.CENTER);button.setBackground(background(Color.rgb(28,28,28),0,8));
@@ -52,7 +53,7 @@ public final class OverlayService extends Service {
         PendingIntent closeIntent=PendingIntent.getService(this,11,new Intent(this,OverlayService.class).setAction("close"),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification n=new Notification.Builder(this,"overlay").setSmallIcon(R.drawable.ic_stride).setContentTitle("行迹悬浮控制已开启").setContentText("返回桌面后可开始、暂停或继续轨迹回放").setContentIntent(openIntent).setOngoing(true).addAction(0,"关闭悬浮窗",closeIntent).build();
         if(Build.VERSION.SDK_INT>=34)startForeground(2,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);else startForeground(2,n);
-        visibility(!appVisible);handler.post(refresh);
+        active=this;visibility(!appVisible);handler.post(refresh);
     }
     private final Runnable refresh=new Runnable(){public void run(){
         if(panel==null)return;
@@ -80,9 +81,10 @@ public final class OverlayService extends Service {
     private void openApp(String config){Intent i=new Intent(this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);if(config!=null)i.putExtra("overlayStart",config);startActivity(i);}
     public void visibility(boolean visible){
         if(panel==null||windows==null)return;
-        try{if(visible&&!attached){windows.addView(panel,params);attached=true;}else if(!visible&&attached){windows.removeView(panel);attached=false;}}catch(Exception e){stopSelf();}
+        try{if(visible&&!attached){windows.addView(panel,params);attached=true;}else if(!visible&&attached){windows.removeView(panel);attached=false;}}catch(Exception e){lastError="悬浮窗显示失败，请检查系统悬浮窗及后台弹出界面权限";Toast.makeText(this,lastError,Toast.LENGTH_LONG).show();stopSelf();}
     }
-    @Override public int onStartCommand(Intent i,int flags,int id){if(i!=null&&"close".equals(i.getAction()))stopSelf();return START_NOT_STICKY;}
+    private void closeOverlay(){getSharedPreferences("stride",0).edit().putBoolean("overlayEnabled",false).apply();stopSelf();}
+    @Override public int onStartCommand(Intent i,int flags,int id){if(i!=null&&"close".equals(i.getAction()))closeOverlay();return START_NOT_STICKY;}
     @Override public void onDestroy(){handler.removeCallbacksAndMessages(null);if(attached&&windows!=null)windows.removeView(panel);attached=false;panel=null;if(active==this)active=null;stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();}
     @Override public IBinder onBind(Intent i){return null;}
 }

@@ -34,7 +34,19 @@ class MapTiles {
   }
   draw(ctx,view,source) {
     if(this.sourceId!==source.id){this.clear();this.sourceId=source.id;}
-    const {center,zoom,width,height}=view,z=Math.max(0,Math.min(19,Math.floor(zoom)));
+    const {center,zoom,width,height}=view;
+    // Sample at the device resolution (up to 2x), never enlarge a lower-level
+    // raster during fractional zoom. Imported maps retain their native levels.
+    const density=source.online?Math.min(2,Math.max(1,view.dpr||1)):1;
+    let z=Math.max(0,Math.min(19,source.online?Math.ceil(zoom+Math.log2(density)):Math.floor(zoom)));
+    // Tall/full-screen viewports must still fit the bounded in-memory cache.
+    const tileCount=level=>{
+      const tileSize=256*2**(zoom-level),n=2**level,c=merc(center);
+      const cols=Math.ceil(c[0]*n+width/2/tileSize)-Math.floor(c[0]*n-width/2/tileSize);
+      const rows=Math.min(n,Math.ceil(c[1]*n+height/2/tileSize))-Math.max(0,Math.floor(c[1]*n-height/2/tileSize));
+      return cols*rows;
+    };
+    while(source.online && z>0 && tileCount(z)>this.maxEntries)z--;
     const size=256*2**(zoom-z),n=2**z,c=merc(center),specs=[];
     const minX=Math.floor(c[0]*n-width/2/size),maxX=Math.ceil(c[0]*n+width/2/size)-1;
     const minY=Math.max(0,Math.floor(c[1]*n-height/2/size)),maxY=Math.min(n-1,Math.ceil(c[1]*n+height/2/size)-1);
