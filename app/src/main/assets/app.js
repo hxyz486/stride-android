@@ -43,7 +43,7 @@ function updateRoute(){
   $('pointCount').textContent=Math.max(0,route.length-1);$('editorDistance').textContent=km.toFixed(2)+' km';
   $('roundTrip').textContent=roundTrip?'往返 ⇄':'单程 ⇄';
   $('undo').disabled=history.length===0;$('editorUndo').disabled=history.length===0;
-  $('clear').disabled=!route.length;$('mapHint').hidden=route.length>1;
+  $('clear').disabled=!route.length;$('homeClear').disabled=!route.length||active();$('mapHint').hidden=route.length>1;
   $('mapHint').querySelector('span:last-child').textContent=zoom<10?'放大地图，用手指画出你的路线':mapSource==='online'?'在线街道地图 · 可直接绘制路线':mapSource==='imported'?'用手指画出你的路线':'此处为概览底图，可切换在线街道';
   dirty=true;persist();
 }
@@ -85,7 +85,8 @@ function renderCities(query){
   const list=$('cityResults');list.textContent='';query=query.trim();
   const coord=query.split(/[,，\s]+/).map(Number);
   if(query&&coord.length===2&&coord.every(Number.isFinite)&&Math.abs(coord[0])<85.05&&Math.abs(coord[1])<=180){const b=document.createElement('button');b.className='city-result';b.textContent='前往 '+coord[0].toFixed(5)+', '+coord[1].toFixed(5);b.onclick=()=>{moveTo(['自定坐标',coord[1],coord[0],15]);closeSheet();};list.append(b);}
-  cities.filter(c=>!query||c[0].includes(query)).forEach(c=>{const b=document.createElement('button');b.className='city-result';const s=document.createElement('span'),small=document.createElement('small');s.textContent=c[0];small.textContent=c[3]<4?'全国视图':mapSource==='online'?'查看在线街道 ↗':'离线坐标定位 ↗';b.append(s,small);b.onclick=()=>{moveTo(c);closeSheet();if(c[3]>4&&mapSource==='overview')toast('已定位城市。点击地图左上角，可切换在线街道');};list.append(b);});
+  if(!query||'自动定位当前位置'.includes(query)){const b=document.createElement('button');b.id='autoLocate';b.className='city-result';const label=document.createElement('span'),detail=document.createElement('small');label.textContent='自动定位';detail.textContent='定位当前位置 ↗';b.append(label,detail);b.onclick=()=>{closeSheet();requestLocation(true);};list.append(b);}
+  cities.filter(c=>c[3]>=4&&(!query||c[0].includes(query))).forEach(c=>{const b=document.createElement('button');b.className='city-result';const s=document.createElement('span'),small=document.createElement('small');s.textContent=c[0];small.textContent=c[3]<4?'全国视图':mapSource==='online'?'查看在线街道 ↗':'离线坐标定位 ↗';b.append(s,small);b.onclick=()=>{moveTo(c);closeSheet();if(c[3]>4&&mapSource==='overview')toast('已定位城市。点击地图左上角，可切换在线街道');};list.append(b);});
   if(!list.children.length){const p=document.createElement('p');p.textContent='未找到城市，可输入“纬度,经度”定位';p.className='note';list.append(p);}
 }
 function fit(points=route){if(!points.length){moveTo(cities[0]);return;}const projected=points.map(mapMerc);let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;for(const p of projected){minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);}mapCenter=mapUnmerc([(minX+maxX)/2,(minY+maxY)/2]);const availableWidth=Math.max(80,width-100),availableHeight=Math.max(80,height-(editing?340:120));zoom=Math.max(2,Math.min(18,Math.log2(Math.min(availableWidth/(Math.max(1e-8,maxX-minX)*256),availableHeight/(Math.max(1e-8,maxY-minY)*256)))));dirty=true;persist();}
@@ -195,6 +196,7 @@ function applyState(next){
   if((running||paused)&&Number.isFinite(next.speed)&&speed!==next.speed){speed=Math.max(0,Math.min(5,next.speed));updateSpeed();}
   if((running||paused)&&typeof next.gyroEnabled==='boolean'&&gyroEnabled!==next.gyroEnabled){gyroEnabled=next.gyroEnabled;updateGyroUI();}
   $('startLabel').textContent=running?'暂停模拟':paused?'继续模拟':finished?'再次模拟':'开始模拟';$('start').firstElementChild.innerHTML=icon(running?'pause':'play');
+  $('homeClear').disabled=!route.length||running||paused||commandPending;
   $('stop').hidden=!running&&!paused;$('runStatus').textContent=running?(next.mock?'系统模拟定位中':'轨迹预览中'):paused?'回放已暂停':finished?'已抵达终点':next.status==='error'?'启动未完成':'准备好，出发吧';
   $('statusDot').classList.toggle('running',running);const fraction=next.total?Math.min(1,(next.distance||0)/next.total):0;
   $('progressBar').style.width=fraction*100+'%';$('progressLabel').textContent=running||paused||finished?Math.round(fraction*100)+'% COMPLETED':'ROUTE SIMULATOR';
@@ -273,7 +275,7 @@ $('help').onclick=()=>showSheet('helpSheet');$('chooseCity').onclick=()=>showShe
 $('modeDraw').onclick=()=>setMode('draw');$('modeMove').onclick=()=>setMode('move');
 $('homeMove').onclick=()=>setHomeTool('move');$('homeFreehand').onclick=()=>setHomeTool('freehand');$('homeWaypoints').onclick=()=>setHomeTool('waypoint');$('locateMe').onclick=()=>requestLocation(true);
 $('zoomIn').onclick=()=>{mapInteraction++;zoom=Math.min(19,zoom+1);dirty=true;updateRoute();};$('zoomOut').onclick=()=>{mapInteraction++;zoom=Math.max(2,zoom-1);dirty=true;updateRoute();};$('fitRoute').onclick=()=>{mapInteraction++;fit();};
-$('undo').onclick=undo;$('clear').onclick=clearRoute;$('demo').onclick=demo;$('openEditor').onclick=()=>setEditing(true);$('editorDone').onclick=()=>setEditing(false);$('editorUndo').onclick=undo;$('editorClear').onclick=clearRoute;
+$('homeClear').onclick=clearRoute;$('undo').onclick=undo;$('clear').onclick=clearRoute;$('demo').onclick=demo;$('openEditor').onclick=()=>setEditing(true);$('editorDone').onclick=()=>setEditing(false);$('editorUndo').onclick=undo;$('editorClear').onclick=clearRoute;
 $('setStart').onclick=()=>setEditorMode('start');$('addPoints').onclick=()=>setEditorMode('waypoint');$('freehand').onclick=()=>setEditorMode('freehand');$('roundTrip').onclick=()=>{if(mutable()){pushHistory();roundTrip=!roundTrip;updateRoute();}};
 $('mockMode').onclick=()=>setMock(true);$('previewMode').onclick=()=>setMock(false);$('openMotion').onclick=()=>showPage('motion');$('start').onclick=start;$('stop').onclick=()=>{if(native)native.stop();else{browserPlayback.data=null;applyState({status:'idle',gyro:[0,0,0]});}};
 $('exportSession').onclick=exportData;$('showChina').onclick=()=>{setMapSource('overview');moveTo(cities[0]);showPage('route');};$('showOnline').onclick=()=>{setMapSource('online');showPage('route');};$('importMap').onclick=()=>native?native.importMap():toast('请在 Android App 中通过文件选择器导入 MBTiles');$('showImported').onclick=showImported;
@@ -294,6 +296,6 @@ function setupRouteTools(){
   $('openMapLibrary').onclick=()=>showPage('maps');$('menuRetryMap').onclick=retryMap;
   $('routeToolsSheet').querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{if($('routeToolsSheet').open)closeSheet();}));
 }
-setupRouteTools();syncMode();requestLocation();
+setupRouteTools();syncMode();requestLocation(true);
 setInterval(()=>{try{if(sensorMode==='device'&&native&&native.sensorState)measured=JSON.parse(native.sensorState());applyState(native?JSON.parse(native.state()):browserPlayback.snapshot());if(native){const overlay=JSON.parse(native.overlayState()),enabled=!!overlay.enabled;if(enabled!==overlayEnabled){overlayEnabled=enabled;updateOverlayUI();if(enabled)toast('悬浮控制已开启，返回桌面即可使用');}if(overlay.error&&overlay.error!==lastOverlayError)toast(overlay.error);lastOverlayError=overlay.error||'';}}catch(e){if(commandPending&&Date.now()>commandDeadline)unlockCommand();}},150);
 function frame(now){if(dirty&&!document.hidden&&$('page-route').classList.contains('active'))drawMap();if(now-lastChart>100){chartSeries.push(displayedGyro());if(chartSeries.length>111)chartSeries.shift();if($('page-motion').classList.contains('active'))drawChart();lastChart=now;}requestAnimationFrame(frame);}requestAnimationFrame(frame);

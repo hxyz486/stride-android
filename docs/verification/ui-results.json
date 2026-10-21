@@ -4,109 +4,109 @@
     {
       "name": "original map controls with trimmed lower panels, default speed and empty-route validation",
       "status": "pass",
-      "milliseconds": 220
+      "milliseconds": 194
     },
     {
       "name": "help open, close, backdrop, native-back handler",
       "status": "pass",
-      "milliseconds": 178
+      "milliseconds": 207
     },
     {
       "name": "city search, no match, invalid coordinates, valid coordinates",
       "status": "pass",
-      "milliseconds": 84
+      "milliseconds": 83
     },
     {
       "name": "zoom plus/minus, fit empty, demo, visible map controls",
       "status": "pass",
-      "milliseconds": 817
+      "milliseconds": 1571
     },
     {
       "name": "full screen start point and numbered waypoints",
       "status": "pass",
-      "milliseconds": 992
+      "milliseconds": 891
     },
     {
       "name": "round trip and clear undo restore route metadata",
       "status": "pass",
-      "milliseconds": 158
+      "milliseconds": 155
     },
     {
       "name": "freehand stroke and undo restores numbered mode",
       "status": "pass",
-      "milliseconds": 179
+      "milliseconds": 180
     },
     {
       "name": "cancelled touch stroke rolls back points and undo record",
       "status": "pass",
-      "milliseconds": 54
+      "milliseconds": 44
     },
     {
       "name": "two finger pinch does not mutate route or undo history",
       "status": "pass",
-      "milliseconds": 36
+      "milliseconds": 34
     },
     {
       "name": "move mode pans without editing route",
       "status": "pass",
-      "milliseconds": 124
+      "milliseconds": 83
     },
     {
       "name": "landscape editor fit remains finite and done control works",
       "status": "pass",
-      "milliseconds": 232
+      "milliseconds": 194
     },
     {
       "name": "0–5 min/km keyboard endpoints, stationary zero, live resume and pause/stop",
       "status": "pass",
-      "milliseconds": 3314
+      "milliseconds": 3259
     },
     {
       "name": "pace units drive actual distance and old-unit preferences reset safely",
       "status": "pass",
-      "milliseconds": 109
+      "milliseconds": 73
     },
     {
       "name": "running route is immutable",
       "status": "pass",
-      "milliseconds": 2111
+      "milliseconds": 2091
     },
     {
       "name": "motion source, gyro toggle and browser-only permission explanations",
       "status": "pass",
-      "milliseconds": 916
+      "milliseconds": 896
     },
     {
       "name": "JSON export keeps WGS84, min/km speed and app-local sensor labels",
       "status": "pass",
-      "milliseconds": 215
+      "milliseconds": 191
     },
     {
       "name": "map library, import explanation and country selection",
       "status": "pass",
-      "milliseconds": 176
+      "milliseconds": 145
     },
     {
       "name": "speed/route persistence and invalid saved center recovery",
       "status": "pass",
-      "milliseconds": 166
+      "milliseconds": 119
     },
     {
       "name": "10000 point limit and bounded undo history",
       "status": "pass",
-      "milliseconds": 788
+      "milliseconds": 761
     },
     {
       "name": "repeated long-press tools, page and switch interactions remain responsive",
       "status": "pass",
-      "milliseconds": 15201
+      "milliseconds": 14883
     },
     {
       "name": "320/393/480 portrait and 852x393 landscape layout",
       "status": "pass",
-      "milliseconds": 3515
+      "milliseconds": 3353
     }
   ],
   "uncaughtErrors": [],
-  "version": "1.3.2"
+  "version": "1.3.3"
 }

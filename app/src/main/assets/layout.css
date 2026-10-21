@@ -215,3 +215,5 @@ main::-webkit-scrollbar{display:none}
 .route-home:not(.editing) .header-actions{position:relative;width:36px;height:36px;display:block}
 .overlay-shortcut{display:none;background:#fffffff2}
 .route-home:not(.editing) .overlay-shortcut{display:block;position:absolute;right:0;top:48px}
+
+.home-modes #homeClear{min-width:40px;padding:6px 8px;border-left:1px solid #e3e3e3;border-radius:0 5px 5px 0}

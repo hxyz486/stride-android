@@ -56,8 +56,8 @@ if '--debug' in sys.argv:
     manifest = debug_manifest
 run(TOOLS/'aapt2.exe', 'link', '-o', BUILD/'base.apk', '-I', ANDROID,
     '--manifest', manifest, '--java', BUILD/'generated',
-    '--min-sdk-version', '26', '--target-sdk-version', '35', '--version-code', '6',
-    '--version-name', '1.3.2', '-A', ROOT/'app/src/main/assets', BUILD/'resources.zip')
+    '--min-sdk-version', '26', '--target-sdk-version', '35', '--version-code', '7',
+    '--version-name', '1.3.3', '-A', ROOT/'app/src/main/assets', BUILD/'resources.zip')
 sources = list((ROOT/'app/src/main/java').rglob('*.java'))+list((BUILD/'generated').rglob('*.java'))
 source_list = BUILD/'sources.txt'
 source_list.write_text('\n'.join('"'+p.as_posix()+'"' for p in sources), encoding='utf-8')
@@ -77,7 +77,7 @@ if not key.exists():
     run(JAVA/'keytool.exe','-genkeypair','-keystore',key,'-storepass','android','-keypass','android',
         '-alias','androiddebugkey','-dname','CN=Stride Local Build,O=Local Development,C=CN',
         '-keyalg','RSA','-keysize','2048','-validity','10000')
-apk=BUILD/'stride-debug.apk' if '--debug' in sys.argv else DIST/'stride-1.3.2.apk'
+apk=BUILD/'stride-debug.apk' if '--debug' in sys.argv else DIST/'stride-1.3.3.apk'
 run(JAVA/'java.exe','-jar',TOOLS/'lib/apksigner.jar','sign','--ks',key,'--ks-key-alias','androiddebugkey',
     '--ks-pass','pass:android','--key-pass','pass:android','--out',apk,BUILD/'aligned.apk')
 run(JAVA/'java.exe','-jar',TOOLS/'lib/apksigner.jar','verify','--verbose',apk)

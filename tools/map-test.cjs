@@ -17,7 +17,7 @@ const server=http.createServer((req,res)=>{let name;try{name=decodeURIComponent(
    window.Native={state:()=>JSON.stringify({status:'idle',gyro:[0,0,0]}),mapInfo:()=>JSON.stringify({available:false}),overlayState:()=>JSON.stringify({enabled:false})};
    if(sessionStorage.getItem('stride-location-fixture')==='enabled'){
     window.__locationCalls=0;window.__locationMode='success';window.__locationPoint=[113.2644,23.1291];
-    window.Native.locate=()=>{window.__locationCalls++;setTimeout(()=>{if(window.__locationMode==='denied')window.nativeEvent('locationError','定位权限未允许，可选择城市后继续使用地图');else window.nativeEvent('location',JSON.stringify({lon:window.__locationPoint[0],lat:window.__locationPoint[1],accuracy:8,provider:'gps',timestamp:Date.now()}));},10);};
+    window.Native.locate=interactive=>{window.__lastLocationInteractive=interactive;window.__locationCalls++;setTimeout(()=>{if(window.__locationMode==='denied')window.nativeEvent('locationError','定位权限未允许，可选择城市后继续使用地图');else window.nativeEvent('location',JSON.stringify({lon:window.__locationPoint[0],lat:window.__locationPoint[1],accuracy:8,provider:'gps',timestamp:Date.now()}));},10);};
    }
   });
   await context.route('**/tiles/**',async route=>{importedRequests.push(route.request().url());await route.fulfill({status:200,contentType:'image/svg+xml',body:tile});});
@@ -217,7 +217,7 @@ const server=http.createServer((req,res)=>{let name;try{name=decodeURIComponent(
    await page.evaluate(()=>sessionStorage.setItem('stride-location-fixture','enabled'));
    await page.reload();await page.waitForFunction(()=>window.__locationCalls===1&&Math.abs(mapCenter[0]-113.2644)<1e-6&&Math.abs(mapCenter[1]-23.1291)<1e-6);await loaded();
    assert.equal(await page.evaluate(()=>mapSource),'online');assert.equal(await page.evaluate(()=>JSON.stringify(route)),routeBefore);
-   assert(await page.evaluate(()=>zoom>=15));assert((await page.locator('#locationStatus').textContent()).includes('定位'));assert(await page.locator('#locationStatus').isVisible(),'original location status should remain on the map');
+   assert.equal(await page.evaluate(()=>window.__lastLocationInteractive),true,'startup must request location permission when needed');assert(await page.evaluate(()=>zoom>=15));assert((await page.locator('#locationStatus').textContent()).includes('定位'));assert(await page.locator('#locationStatus').isVisible(),'original location status should remain on the map');
    await page.screenshot({path:path.join(out,'location-fixture.png')});
   });
   await check('location denial preserves the map and manual retry recenters without changing route',async()=>{
@@ -226,7 +226,7 @@ const server=http.createServer((req,res)=>{let name;try{name=decodeURIComponent(
    await page.waitForFunction(()=>window.__locationCalls===2&&(document.getElementById('locationStatus').textContent+' '+document.getElementById('toast').textContent).includes('权限'));
    assert.equal(await page.evaluate(()=>JSON.stringify(mapCenter)),before.center);assert.equal(await page.evaluate(()=>JSON.stringify(route)),before.route);
    assert.equal(await page.evaluate(()=>mapSource),'online');assert(await page.locator('#homeMove').isEnabled());
-   await page.evaluate(()=>{window.__locationMode='success';window.__locationPoint=[112.9388,28.2282];});await click('locateMe');
+   await page.evaluate(()=>{window.__locationMode='success';window.__locationPoint=[112.9388,28.2282];});await click('chooseCity');assert.equal(await page.locator('.city-result').first().locator('span').textContent(),'自动定位');assert.equal(await page.locator('.city-result').filter({hasText:'全国概览'}).count(),0);await click('autoLocate');assert(!(await page.locator('#citySheet').isVisible()));
    await page.waitForFunction(()=>window.__locationCalls===3&&Math.abs(mapCenter[0]-112.9388)<1e-6&&Math.abs(mapCenter[1]-28.2282)<1e-6);await loaded();
    assert.equal(await page.evaluate(()=>JSON.stringify(route)),before.route);
   });
@@ -245,7 +245,7 @@ const server=http.createServer((req,res)=>{let name;try{name=decodeURIComponent(
     for(const id of ['map','speed','start','mapAttribution']){
      const box=await page.locator('#'+id).boundingBox();assert(box&&box.x>=0&&box.y>=0&&box.x+box.width<=width+.5&&box.y+box.height<=height+.5,id+' outside first screen '+width+'x'+height);
     }
-    for(const id of ['mapStatus','homeMove','homeFreehand','homeWaypoints','locateMe','zoomIn','zoomOut','homeOverlay','help'])assert(await page.locator('#'+id).isVisible(),id+' must remain visible '+width+'x'+height);
+    for(const id of ['mapStatus','homeMove','homeFreehand','homeWaypoints','homeClear','locateMe','zoomIn','zoomOut','homeOverlay','help'])assert(await page.locator('#'+id).isVisible(),id+' must remain visible '+width+'x'+height);
     for(const selector of ['.home-secondary','.map-hint','.playback-status','.progress-track'])assert(!(await page.locator(selector).isVisible()),selector+' should stay hidden '+width+'x'+height);
     const overlay=await page.locator('#homeOverlay').boundingBox(),tools=await page.locator('.home-modes').boundingBox();assert(overlay.x>=tools.x+tools.width||overlay.y>=tools.y+tools.height||tools.y>=overlay.y+overlay.height,'floating control overlaps route modes');
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

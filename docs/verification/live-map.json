@@ -10,5 +10,5 @@
   "browser": "Isolated Chrome, actual Amap network, no tile interception",
   "mapColors": "source colors preserved",
   "uncaughtErrors": [],
-  "version": "1.3.2"
+  "version": "1.3.3"
 }
